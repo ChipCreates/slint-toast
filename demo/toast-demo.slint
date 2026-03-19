@@ -1,0 +1,301 @@
+// SPDX-License-Identifier: MIT
+// Toast Demo — self-contained. Run with: slint-viewer demo/toast-demo.slint
+// No backend required. All interactivity via Slint Button and internal state.
+
+import { Button, ComboBox, ScrollView } from "std-widgets.slint";
+import { ToastKind, ToastAnchor, ToastStyle } from "../ui/toast-types.slint";
+import { Toast } from "../ui/toast.slint";
+import { ToastHost } from "../ui/toast-host.slint";
+
+export component ToastDemo inherits Window {
+    title: "Slint Toast Demo";
+    width: 900px;
+    height: 700px;
+    background: #1e1e2e;
+
+    // === Section 6: anchor selector state ===
+    private property <int> selected-anchor-index: 0;
+    private property <ToastAnchor> selected-anchor: {
+        if (selected-anchor-index == 0) {
+            ToastAnchor.BottomRight
+        } else if (selected-anchor-index == 1) {
+            ToastAnchor.BottomCenter
+        } else if (selected-anchor-index == 2) {
+            ToastAnchor.BottomLeft
+        } else if (selected-anchor-index == 3) {
+            ToastAnchor.TopRight
+        } else if (selected-anchor-index == 4) {
+            ToastAnchor.TopCenter
+        } else {
+            ToastAnchor.TopLeft
+        }
+    };
+
+    // === Section 3: action button state ===
+    private property <bool> action-fired: false;
+
+    // === Section 2 / 3 / 4 / 5: interactive dismiss visibility ===
+    private property <bool> sec2-visible: false;
+    private property <bool> sec3-visible: false;
+
+    ScrollView {
+        width: parent.width;
+        height: parent.height;
+
+        VerticalLayout {
+            padding: 32px;
+            spacing: 32px;
+            alignment: start;
+
+            // ─── Header ───────────────────────────────────────────────────────
+            Text {
+                text: "Slint Toast Component Demo";
+                font-size: 24px;
+                font-weight: 700;
+                color: #cdd6f4;
+            }
+
+            // ─── Section 1: All four kinds ────────────────────────────────────
+            VerticalLayout {
+                spacing: 12px;
+
+                Text {
+                    text: "1 — All four ToastKind variants";
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #a6adc8;
+                }
+
+                Toast {
+                    kind: ToastKind.Info;
+                    text: "Info: your file has been indexed.";
+                    show: true;
+                    show-close: false;
+                }
+
+                Toast {
+                    kind: ToastKind.Success;
+                    text: "Success: export complete.";
+                    show: true;
+                    show-close: false;
+                }
+
+                Toast {
+                    kind: ToastKind.Warning;
+                    text: "Warning: disk space is running low.";
+                    show: true;
+                    show-close: false;
+                }
+
+                Toast {
+                    kind: ToastKind.Error;
+                    text: "Error: connection failed.";
+                    show: true;
+                    show-close: false;
+                }
+            }
+
+            // ─── Section 2: Interactive dismiss ───────────────────────────────
+            VerticalLayout {
+                spacing: 12px;
+
+                Text {
+                    text: "2 — Interactive dismiss (show / hide via buttons)";
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #a6adc8;
+                }
+
+                HorizontalLayout {
+                    spacing: 8px;
+
+                    Button {
+                        text: "Show toast";
+                        clicked => {
+                            sec2-visible = true;
+                        }
+                    }
+
+                    Button {
+                        text: "Hide toast";
+                        clicked => {
+                            sec2-visible = false;
+                        }
+                    }
+                }
+
+                Toast {
+                    kind: ToastKind.Success;
+                    text: "File saved successfully. Click ✕ or the button above to dismiss.";
+                    show: sec2-visible;
+                    show-close: true;
+                    closed => {
+                        sec2-visible = false;
+                    }
+                }
+            }
+
+            // ─── Section 3: Action button ─────────────────────────────────────
+            VerticalLayout {
+                spacing: 12px;
+
+                Text {
+                    text: "3 — Action button (\"Undo\")";
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #a6adc8;
+                }
+
+                HorizontalLayout {
+                    spacing: 8px;
+
+                    Button {
+                        text: "Show toast with action";
+                        clicked => {
+                            sec3-visible = true;
+                            action-fired = false;
+                        }
+                    }
+                }
+
+                Toast {
+                    kind: ToastKind.Info;
+                    text: "Message deleted.";
+                    action-label: "Undo";
+                    show: sec3-visible;
+                    show-close: true;
+                    closed => {
+                        sec3-visible = false;
+                    }
+                    action => {
+                        action-fired = true;
+                        sec3-visible = false;
+                    }
+                }
+
+                Text {
+                    text: action-fired ? "✓ Action callback fired!" : "";
+                    color: #a6e3a1;
+                    font-size: 13px;
+                }
+            }
+
+            // ─── Section 4: No close button ───────────────────────────────────
+            VerticalLayout {
+                spacing: 12px;
+
+                Text {
+                    text: "4 — show-close: false (no dismiss control)";
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #a6adc8;
+                }
+
+                Toast {
+                    kind: ToastKind.Warning;
+                    text: "Background sync in progress — this cannot be dismissed.";
+                    show: true;
+                    show-close: false;
+                }
+            }
+
+            // ─── Section 5: Disabled state ────────────────────────────────────
+            VerticalLayout {
+                spacing: 12px;
+
+                Text {
+                    text: "5 — enabled: false (buttons non-interactive)";
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #a6adc8;
+                }
+
+                Toast {
+                    kind: ToastKind.Error;
+                    text: "Upload failed. Retry disabled during shutdown.";
+                    action-label: "Retry";
+                    show: true;
+                    show-close: true;
+                    enabled: false;
+                }
+            }
+
+            // ─── Section 6: Anchor selector ───────────────────────────────────
+            VerticalLayout {
+                spacing: 12px;
+
+                Text {
+                    text: "6 — ToastAnchor selector (uses ToastHost overlay)";
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #a6adc8;
+                }
+
+                HorizontalLayout {
+                    spacing: 8px;
+                    alignment: start;
+
+                    ComboBox {
+                        model: ["BottomRight", "BottomCenter", "BottomLeft", "TopRight", "TopCenter", "TopLeft"];
+                        current-index <=> root.selected-anchor-index;
+                    }
+
+                    Button {
+                        text: "Show toast at anchor";
+                        clicked => {
+                            anchor-host.show("Toast at selected anchor position.", ToastKind.Info);
+                        }
+                    }
+
+                    Button {
+                        text: "Hide";
+                        clicked => {
+                            anchor-host.hide();
+                        }
+                    }
+                }
+
+                Text {
+                    text: "↑ Toast will appear at the selected window position (see overlay).";
+                    color: #6c7086;
+                    font-size: 12px;
+                }
+            }
+
+            // ─── Section 7: Custom ToastStyle override ────────────────────────
+            VerticalLayout {
+                spacing: 12px;
+
+                Text {
+                    text: "7 — Custom ToastStyle override";
+                    font-size: 14px;
+                    font-weight: 600;
+                    color: #a6adc8;
+                }
+
+                Toast {
+                    kind: ToastKind.Info;
+                    text: "Custom style: purple background, white text, large radius.";
+                    show: true;
+                    show-close: true;
+                    action-label: "OK";
+                    style: {
+                        background-info: #6c3483,
+                        foreground-info: #ffffff,
+                        border-radius: 20px,
+                        padding: 20px,
+                        fade-in-duration: 400ms,
+                        fade-out-duration: 400ms,
+                        slide-duration: 350ms,
+                    };
+                }
+            }
+        }
+    }
+
+    // ─── Section 6 ToastHost overlay ─────────────────────────────────────────
+    // Must be last direct child of Window — renders on top of all other content.
+    anchor-host := ToastHost {
+        anchor: root.selected-anchor;
+    }
+}

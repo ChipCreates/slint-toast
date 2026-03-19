@@ -1,0 +1,183 @@
+// SPDX-License-Identifier: MIT
+// Toast — visual atom. No timers. No positioning. No business logic.
+
+import { ToastKind, ToastStyle } from "toast-types.slint";
+import { Palette } from "std-widgets.slint";
+
+export component Toast inherits Rectangle {
+    // === Public API ===
+    in property <string> text;
+    in property <ToastKind> kind;
+    in property <bool> show: false;
+    in property <bool> enabled: true;
+    in property <bool> show-close: true;
+    in property <string> action-label;
+    in property <image> icon;
+    in property <ToastStyle> style;
+
+    callback closed();
+    callback action();
+
+    // === Private: resolved background (zero = unset → default) ===
+    private property <brush> resolved-background: {
+        if (root.kind == ToastKind.Info) {
+            root.style.background-info == transparent
+                ? Palette.accent-background
+                : root.style.background-info
+        } else if (root.kind == ToastKind.Success) {
+            root.style.background-success == transparent
+                ? (Palette.color-scheme == ColorScheme.dark ? #388e3c : #2e7d32)
+                : root.style.background-success
+        } else if (root.kind == ToastKind.Warning) {
+            root.style.background-warning == transparent
+                ? (Palette.color-scheme == ColorScheme.dark ? #f57c00 : #e65100)
+                : root.style.background-warning
+        } else {
+            root.style.background-error == transparent
+                ? (Palette.color-scheme == ColorScheme.dark ? #ef5350 : #c62828)
+                : root.style.background-error
+        }
+    };
+
+    // === Private: resolved foreground ===
+    private property <brush> resolved-foreground: {
+        if (root.kind == ToastKind.Info) {
+            root.style.foreground-info == transparent
+                ? Palette.accent-foreground
+                : root.style.foreground-info
+        } else if (root.kind == ToastKind.Success) {
+            root.style.foreground-success == transparent
+                ? #ffffff
+                : root.style.foreground-success
+        } else if (root.kind == ToastKind.Warning) {
+            root.style.foreground-warning == transparent
+                ? #000000
+                : root.style.foreground-warning
+        } else {
+            root.style.foreground-error == transparent
+                ? #ffffff
+                : root.style.foreground-error
+        }
+    };
+
+    // === Private: resolved shape / spacing ===
+    private property <length> resolved-border-radius: root.style.border-radius == 0px ? 6px : root.style.border-radius;
+    private property <length> resolved-padding: root.style.padding == 0px ? 14px : root.style.padding;
+
+    // === Private: resolved animation durations ===
+    private property <duration> resolved-fade-in: root.style.fade-in-duration == 0ms ? 180ms : root.style.fade-in-duration;
+    private property <duration> resolved-fade-out: root.style.fade-out-duration == 0ms ? 220ms : root.style.fade-out-duration;
+    private property <duration> resolved-slide: root.style.slide-duration == 0ms ? 200ms : root.style.slide-duration;
+
+    // === Private: animation state ===
+    private property <float> display-opacity: 0.0;
+    private property <length> slide-offset: 40px;
+
+    // === Root visual bindings ===
+    background: root.resolved-background;
+    border-radius: root.resolved-border-radius;
+    opacity: root.display-opacity;
+
+    // Composite visible — keeps element in render tree during exit animation.
+    // When visible flips false, display-opacity animates to 0.0; the element
+    // remains in the tree until display-opacity reaches 0.0.
+    visible: root.show || root.display-opacity > 0.0;
+
+    // Slide offset applied as y-translation via top margin trick.
+    // Positive slide-offset = shifted down; 0 = final resting position.
+    y: root.slide-offset;
+
+    // === States and transitions ===
+    states [
+        shown when root.show: {
+            display-opacity: 1.0;
+            slide-offset: 0px;
+            in {
+                animate display-opacity {
+                    duration: root.resolved-fade-in;
+                    easing: ease-out;
+                }
+                animate slide-offset {
+                    duration: root.resolved-slide;
+                    easing: ease-out;
+                }
+            }
+        }
+        hidden when !root.show: {
+            display-opacity: 0.0;
+            slide-offset: 40px;
+            out {
+                animate display-opacity {
+                    duration: root.resolved-fade-out;
+                    easing: ease-in;
+                }
+                animate slide-offset {
+                    duration: root.resolved-slide;
+                    easing: ease-in;
+                }
+            }
+        }
+    ]
+
+    // === Interior layout ===
+    HorizontalLayout {
+        padding: root.resolved-padding;
+        spacing: 8px;
+        alignment: center;
+
+        // Icon — no null sentinel in Slint; detect via dimensions
+        if root.icon.width > 0 && root.icon.height > 0: Image {
+            source: root.icon;
+            width: 20px;
+            height: 20px;
+            vertical-alignment: center;
+        }
+
+        // Message text
+        Text {
+            text: root.text;
+            color: root.resolved-foreground;
+            vertical-alignment: center;
+            horizontal-stretch: 1;
+            wrap: word-wrap;
+
+            accessible-role: AccessibleRole.text;
+            accessible-label: root.text;
+        }
+
+        // Action button — only when action-label is non-empty
+        if root.action-label != "": TouchArea {
+            enabled: root.enabled;
+            clicked => {
+                root.action();
+            }
+
+            accessible-role: button;
+            accessible-label: root.action-label;
+
+            Text {
+                text: root.action-label;
+                color: root.resolved-foreground;
+                vertical-alignment: center;
+                font-weight: 600;
+            }
+        }
+
+        // Close button — only when show-close is true
+        if root.show-close: TouchArea {
+            enabled: root.enabled;
+            clicked => {
+                root.closed();
+            }
+
+            accessible-role: button;
+            accessible-label: "Close";
+
+            Text {
+                text: "✕";
+                color: root.resolved-foreground;
+                vertical-alignment: center;
+            }
+        }
+    }
+}

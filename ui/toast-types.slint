@@ -1,0 +1,43 @@
+// SPDX-License-Identifier: MIT
+// Toast types — enums and style struct. No visual elements.
+// Imported by toast.slint and toast-host.slint.
+
+export enum ToastKind {
+    Info,
+    Success,
+    Warning,
+    Error,
+}
+
+export enum ToastAnchor {
+    BottomRight,
+    BottomCenter,
+    BottomLeft,
+    TopRight,
+    TopCenter,
+    TopLeft,
+}
+
+export struct ToastStyle {
+    // Per-kind background colors
+    background-info: brush,
+    background-success: brush,
+    background-warning: brush,
+    background-error: brush,
+
+    // Per-kind foreground colors
+    foreground-info: brush,
+    foreground-success: brush,
+    foreground-warning: brush,
+    foreground-error: brush,
+
+    // Shape and spacing
+    border-radius: length,
+    padding: length,
+
+    // Animation durations
+    fade-in-duration: duration,
+    fade-out-duration: duration,
+    slide-duration: duration,
+    // Zero values are treated as unset — see Zero-value contract in docs.
+}
