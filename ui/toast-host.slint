@@ -44,6 +44,11 @@ export component ToastHost inherits Rectangle {
 
     // === Internal Toast instance ===
     toast := Toast {
+        // Constrain to a reasonable width; height is content-driven.
+        // Without explicit sizing, a Rectangle child of a Rectangle fills 100%x100%.
+        width: min(360px, root.width - 2 * root.edge-margin);
+        height: self.preferred-height;
+
         // Forward all state via one-way bindings (not <=>)
         text: root.active-text;
         kind: root.active-kind;

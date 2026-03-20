@@ -67,11 +67,9 @@ export component Toast inherits Rectangle {
     // === Private: resolved animation durations ===
     private property <duration> resolved-fade-in: root.style.fade-in-duration == 0ms ? 180ms : root.style.fade-in-duration;
     private property <duration> resolved-fade-out: root.style.fade-out-duration == 0ms ? 220ms : root.style.fade-out-duration;
-    private property <duration> resolved-slide: root.style.slide-duration == 0ms ? 200ms : root.style.slide-duration;
 
     // === Private: animation state ===
     private property <float> display-opacity: 0.0;
-    private property <length> slide-offset: 40px;
 
     // === Root visual bindings ===
     background: root.resolved-background;
@@ -83,36 +81,22 @@ export component Toast inherits Rectangle {
     // remains in the tree until display-opacity reaches 0.0.
     visible: root.show || root.display-opacity > 0.0;
 
-    // Slide offset applied as y-translation via top margin trick.
-    // Positive slide-offset = shifted down; 0 = final resting position.
-    y: root.slide-offset;
-
     // === States and transitions ===
     states [
         shown when root.show: {
             display-opacity: 1.0;
-            slide-offset: 0px;
             in {
                 animate display-opacity {
                     duration: root.resolved-fade-in;
-                    easing: ease-out;
-                }
-                animate slide-offset {
-                    duration: root.resolved-slide;
                     easing: ease-out;
                 }
             }
         }
         hidden when !root.show: {
             display-opacity: 0.0;
-            slide-offset: 40px;
             out {
                 animate display-opacity {
                     duration: root.resolved-fade-out;
-                    easing: ease-in;
-                }
-                animate slide-offset {
-                    duration: root.resolved-slide;
                     easing: ease-in;
                 }
             }
@@ -174,7 +158,7 @@ export component Toast inherits Rectangle {
             accessible-label: "Close";
 
             Text {
-                text: "✕";
+                text: "×";
                 color: root.resolved-foreground;
                 vertical-alignment: center;
             }
