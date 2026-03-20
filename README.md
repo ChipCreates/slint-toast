@@ -1,5 +1,7 @@
 # Slint Toast Component
 
+![Slint Toast Component demo screenshot](docs/screenshots/demo-screen-1.png)
+
 A pure-UI, language-agnostic toast/snackbar notification component for the [Slint](https://slint.dev) UI toolkit.
 Designed for upstream inclusion in the Slint component library.
 
