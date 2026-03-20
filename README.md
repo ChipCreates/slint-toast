@@ -76,6 +76,7 @@ Working integration examples are in [`docs/examples/`](docs/examples/):
 | Rust | [`docs/examples/rust/`](docs/examples/rust/) |
 | C++ | [`docs/examples/cpp/`](docs/examples/cpp/) |
 | JavaScript | [`docs/examples/javascript/`](docs/examples/javascript/) |
+| Python | [`docs/examples/python/`](docs/examples/python/) |
 
 Each example demonstrates calling `show()`/`hide()` from the host language, auto-dismiss via a timer, and reacting to `toast-closed` and `toast-action` callbacks.
 

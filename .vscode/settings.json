@@ -2,5 +2,6 @@
     "slint.libraryPaths": {
         "toast": "./ui"
     },
-    "slint.preview.style": "fluent"
+    "slint.preview.style": "fluent",
+    "cmake.ignoreCMakeListsMissing": true
 }
