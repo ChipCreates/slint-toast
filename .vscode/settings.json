@@ -1,0 +1,6 @@
+{
+    "slint.libraryPaths": {
+        "toast": "./ui"
+    },
+    "slint.preview.style": "fluent"
+}
