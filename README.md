@@ -2,97 +2,92 @@
 
 ![Slint Toast Component demo screenshot](docs/screenshots/demo-screen-1.png)
 
-A pure-UI, language-agnostic toast/snackbar notification component for the [Slint](https://slint.dev) UI toolkit.
-Designed for upstream inclusion in the Slint component library.
+A toast/snackbar notification component for the [Slint](https://slint.dev) UI toolkit. Drop it into any Slint project — no timers, no queuing logic, no backend assumptions. The component handles rendering and animation; your application handles the rest.
 
-- No timers
-- No business logic
-- No backend assumptions
-- No Rust/C++/JS/Python dependencies
-
-All behavioral orchestration (timers, queueing, sequencing, screen reader announcements) is the responsibility of the host application.
+Compatible with all Slint host languages: Rust, C++, JavaScript, and Python.
 
 ---
 
 ## Features
 
-- Four semantic toast kinds: `Info`, `Success`, `Warning`, `Error`
-- Six anchor positions (top/bottom × left/center/right)
-- Optional action button
+- Four semantic kinds: `Info`, `Success`, `Warning`, `Error`
+- Six anchor positions — corners and center edges
+- Optional action button with callback
 - Optional icon
 - Configurable close button
 - Fully themeable via `ToastStyle`
-- Palette-aware defaults with accessible fallback colors (WCAG AA)
-- Smooth fade + slide animations (opacity-only — no layout reflow)
+- Palette-aware defaults — `Info` adapts to Fluent, Cosmic, and Material themes automatically
+- WCAG AA compliant fallback colors for all kinds
+- Smooth fade animation
 - Accessibility roles and labels built in
 
 ---
 
-## Repository Structure
+## Getting Started
 
-```
-slint-toast/
-├── ui/
-│   ├── toast-types.slint       # Enums and ToastStyle struct — no visuals
-│   ├── toast.slint             # Toast — the visual atom
-│   └── toast-host.slint        # ToastHost — positioning container
-├── demo/
-│   └── toast-demo.slint        # Self-contained demo (slint-viewer compatible)
-└── README.md
-```
-
-Only `.slint` files. No backend code required or provided.
-
----
-
-## Quick Start
-
-### 1. Import the components
+Copy the `ui/` directory into your project, then import from your `.slint` file:
 
 ```slint
-import { ToastHost, ToastKind } from "ui/toast-host.slint";
+import { ToastHost } from "ui/toast-host.slint";
+import { ToastKind, ToastAnchor } from "ui/toast-types.slint";
 ```
 
-### 2. Add `ToastHost` as the **last direct child** of your root `Window`
+### Minimum working example
 
 ```slint
 export component AppWindow inherits Window {
     // ... all your UI content ...
 
-    // ToastHost MUST be last — renders on top of all other content
+    // ToastHost must be the last direct child of Window
     toast-host := ToastHost {
         anchor: ToastAnchor.BottomRight;
     }
 }
 ```
 
-### 3. Show a toast (from your host language or Slint Button)
+Show a toast from anywhere in your Slint UI:
 
 ```slint
-// Slint
 toast-host.show("File saved.", ToastKind.Success);
 ```
 
-```rust
-// Rust
-window.invoke_show("File saved.".into(), ToastKind::Success);
-```
-
-### 4. Hide it (on timer expiry or user action)
-
-```slint
-toast-host.hide();
-```
+Or call it from your host language. See the [language examples](#language-examples) below.
 
 ---
 
-## Public API
+## Demo
+
+Run the interactive demo with no backend required:
+
+```
+slint-viewer demo/toast-demo.slint
+```
+
+Covers all four kinds, interactive dismiss, action button, disabled state, anchor selector, and custom `ToastStyle` override.
+
+---
+
+## Language Examples
+
+Working integration examples are in [`docs/examples/`](docs/examples/):
+
+| Language | Location |
+|---|---|
+| Rust | [`docs/examples/rust/`](docs/examples/rust/) |
+| C++ | [`docs/examples/cpp/`](docs/examples/cpp/) |
+| JavaScript | [`docs/examples/javascript/`](docs/examples/javascript/) |
+
+Each example demonstrates calling `show()`/`hide()` from the host language, auto-dismiss via a timer, and reacting to `toast-closed` and `toast-action` callbacks.
+
+---
+
+## API Reference
 
 ### `ToastKind` enum
 
 ```slint
 export enum ToastKind {
-    Info,      // zero-value default
+    Info,       // default
     Success,
     Warning,
     Error,
@@ -113,6 +108,8 @@ export enum ToastAnchor {
 ```
 
 ### `ToastStyle` struct
+
+All fields are optional. Zero values (`0px`, `0ms`, transparent brushes) are treated as unset and replaced with the defaults listed in the [Theming](#theming) section.
 
 ```slint
 export struct ToastStyle {
@@ -135,19 +132,17 @@ export struct ToastStyle {
 }
 ```
 
-> **Zero-value contract:** Slint struct fields have no defaults. Zero values (`0px`, `0ms`, transparent brushes) are treated as *unset* and replaced with component defaults at render time. A host cannot use `ToastStyle` to request zero padding or instant animations — this is a known Slint language constraint.
-
 ### `Toast` component
 
-The visual atom. No positioning, no timers, no queueing.
+The visual atom. Renders a single toast. Use this directly if you need fine-grained control; use `ToastHost` for the typical overlay use case.
 
 **Properties**
 
 | Property | Type | Default | Notes |
 |---|---|---|---|
+| `show` | `bool` | `false` | Drives show/hide and fade animation |
 | `text` | `string` | `""` | Notification message |
 | `kind` | `ToastKind` | `Info` | Controls color resolution |
-| `visible` | `bool` | `false` | Drives show/hide and animations |
 | `enabled` | `bool` | `true` | When false, buttons are non-interactive |
 | `show-close` | `bool` | `true` | Whether the close button is rendered |
 | `action-label` | `string` | `""` | Empty = no action button rendered |
@@ -163,22 +158,18 @@ The visual atom. No positioning, no timers, no queueing.
 
 ### `ToastHost` component
 
-The overlay container. Owns a single `Toast` instance. Command-driven — no public `visible` property.
+The overlay container. Wraps `Toast` with anchor positioning and a command-driven interface. This is what most applications should use.
 
 **Properties**
 
 | Property | Type | Default | Notes |
 |---|---|---|---|
-| `text` | `string` | `""` | Forwarded to `Toast.text` |
-| `kind` | `ToastKind` | `Info` | Forwarded |
-| `enabled` | `bool` | `true` | Forwarded |
-| `show-close` | `bool` | `true` | Forwarded |
-| `action-label` | `string` | `""` | Forwarded |
-| `icon` | `image` | — | Forwarded |
 | `anchor` | `ToastAnchor` | `BottomRight` | Overlay position |
-| `style` | `ToastStyle` | — | Forwarded |
-
-> There is intentionally **no public `visible` property** on `ToastHost`. Visibility is controlled exclusively by `show()` and `hide()`.
+| `show-close` | `bool` | `true` | Forwarded to `Toast` |
+| `enabled` | `bool` | `true` | Forwarded to `Toast` |
+| `action-label` | `string` | `""` | Forwarded to `Toast` |
+| `icon` | `image` | — | Forwarded to `Toast` |
+| `style` | `ToastStyle` | — | Forwarded to `Toast` |
 
 **Functions**
 
@@ -187,42 +178,36 @@ public function show(text: string, kind: ToastKind)
 public function hide()
 ```
 
+`ToastHost` has no public `visible` property. Visibility is controlled exclusively by `show()` and `hide()`.
+
 **Callbacks**
 
 | Callback | Fired when |
 |---|---|
-| `toast-closed()` | Internal `Toast.closed` fires |
-| `toast-action()` | Internal `Toast.action` fires |
+| `toast-closed()` | User clicks the close button |
+| `toast-action()` | User clicks the action button |
 
 ---
 
 ## Theming
 
-### Palette integration (hybrid strategy)
+### Default colors
 
-| Kind | Background | Foreground |
-|---|---|---|
-| `Info` | `Palette.accent-background` | `Palette.accent-foreground` |
-| `Success` | light `#2e7d32` / dark `#388e3c` | `#ffffff` |
-| `Warning` | light `#e65100` / dark `#f57c00` | `#000000` |
-| `Error` | light `#c62828` / dark `#ef5350` | `#ffffff` |
+| Kind | Light background | Dark background | Foreground |
+|---|---|---|---|
+| `Info` | `Palette.accent-background` | `Palette.accent-background` | `Palette.accent-foreground` |
+| `Success` | `#2e7d32` | `#388e3c` | `#ffffff` |
+| `Warning` | `#e65100` | `#f57c00` | `#000000` |
+| `Error` | `#c62828` | `#ef5350` | `#ffffff` |
 
-`Info` automatically adapts to Fluent, Cosmic, and Material styles via `Palette`. All colors are WCAG AA compliant.
+### Default shape and animation
 
-### Animation defaults
-
-| Field | Default |
-|---|---|
-| `fade-in-duration` | `180ms` |
-| `fade-out-duration` | `220ms` |
-| `slide-duration` | `200ms` |
-
-### Shape defaults
-
-| Field | Default |
+| Property | Default |
 |---|---|
 | `border-radius` | `6px` |
 | `padding` | `14px` |
+| `fade-in-duration` | `180ms` |
+| `fade-out-duration` | `220ms` |
 
 ### Custom style example
 
@@ -240,83 +225,66 @@ toast-host := ToastHost {
 
 ---
 
-## Z-Order and Layout Rules
+## Placement Rules
 
-> These rules are **mandatory** for correct overlay behavior.
+### `ToastHost` must be the last direct child of `Window`
 
-### Rule 1: `ToastHost` must be the **last direct child** of the root `Window`
-
-Slint renders children in declaration order. The last child renders on top.
+Slint renders children in declaration order. The last child renders on top of everything else.
 
 ```slint
 export component AppWindow inherits Window {
-    // All other content — layouts, panels, etc.
-    VerticalLayout { ... }
+    VerticalLayout { /* your content */ }
 
-    // ToastHost MUST be declared last
+    // Declare ToastHost last — it will render above all other content
     toast-host := ToastHost { }
 }
 ```
 
-### Rule 2: `ToastHost` must **not** be nested inside any layout
+### `ToastHost` must not be nested inside a layout
 
-Layout elements (`HorizontalLayout`, `VerticalLayout`, `GridLayout`) constrain children to their bounds. The toast overlay must float above all content.
+Layout elements (`HorizontalLayout`, `VerticalLayout`, `GridLayout`) constrain their children to their own bounds. `ToastHost` needs to float above all content across the full window area.
 
 ```slint
-// ✓ Correct
-export component AppWindow inherits Window {
-    toast-host := ToastHost { }
-}
+// ✓ Correct — direct child of Window
+toast-host := ToastHost { }
 
-// ✗ Incorrect — ToastHost inside a layout
+// ✗ Incorrect — will not overlay correctly
 VerticalLayout {
-    ToastHost { }   // will not overlay correctly
+    ToastHost { }
 }
 ```
+
+---
+
+## Host Application Responsibilities
+
+This component is a pure UI primitive. The host application is responsible for:
+
+| Concern | How |
+|---|---|
+| Auto-dismiss | Own a timer; call `toast-host.hide()` on expiry |
+| Toast queue | On `toast-closed()` or timer expiry, call `show()` with the next item |
+| Pre-show configuration | Set `action-label`, `icon`, `style` before calling `show()` |
+| Action handling | React to `toast-action()` with app-specific logic |
+| Screen reader announcement | Implement supplemental logic if guaranteed announcement is required |
+
+A minimal host implementation is around 20–30 lines in any supported language.
 
 ---
 
 ## Accessibility
 
-The component provides internally:
-
 | Element | `accessible-role` | `accessible-label` |
 |---|---|---|
-| Message text | `text` | bound to `text` property |
-| Close button | `button` | `"Close"` (static) |
+| Message text | `text` | bound to `text` |
+| Close button | `button` | `"Close"` |
 | Action button | `button` | bound to `action-label` |
 
 When `enabled = false`, close and action buttons are removed from keyboard focus traversal.
 
-### Known limitations
-
-- **Screen reader announcement:** Slint does not provide an `alert` accessible role. This component cannot guarantee proactive screen reader announcement when a toast appears. Applications requiring guaranteed announcement must implement supplemental logic at the application level.
-- **Close button i18n:** The close button `accessible-label` is the static English string `"Close"`. Localisation is out of scope and deferred to a future enhancement.
-
----
-
-## Host Responsibilities
-
-To use this component correctly, the host application must:
-
-1. **Place `ToastHost` as the last direct child** of the root `Window` (not nested in any layout)
-2. **Own a timer** — on expiry, call `toast-host.hide()`
-3. **Own a queue** — on `toast-closed()` or timer expiry, pop the next entry and call `toast-host.show(text, kind)`
-4. **Set properties** (`action-label`, `icon`, `style`) before calling `show()`
-5. **React to `toast-action()`** with application-specific logic
-6. **Implement supplemental screen reader announcement** if the application requires guaranteed assistive technology notification
-
-A minimal host implementation requires approximately 20–30 lines in any supported language.
-
----
-
-## Demo
-
-```
-slint-viewer demo/toast-demo.slint
-```
-
-Covers: all four kinds, interactive dismiss, action button, `show-close: false`, `enabled: false`, anchor selector across all six positions, and custom `ToastStyle` override.
+**Limitations:**
+- Slint does not provide an `alert` accessible role, so this component cannot guarantee proactive screen reader announcement. Applications requiring guaranteed announcement must implement supplemental logic.
+- The close button label is the static English string `"Close"`. Localisation is not currently supported.
 
 ---
 
@@ -324,27 +292,18 @@ Covers: all four kinds, interactive dismiss, action button, `show-close: false`,
 
 | Limitation | Detail |
 |---|---|
-| Screen reader announcement | No `alert` role in Slint — host must supplement |
-| Close button i18n | Static English label `"Close"` |
-| `ToastHost` placement | Must be last child of `Window`, not in any layout |
-| `ToastStyle` zero values | Cannot request zero padding or instant animations via style |
-| Single toast | `ToastHost` owns one `Toast` — queuing is host responsibility |
+| Single toast at a time | `ToastHost` owns one `Toast` — queuing is the host's responsibility |
+| Screen reader announcement | No Slint `alert` role — host must supplement if needed |
+| Close button label | Static English `"Close"` — not localisable via this component |
+| Zero style values | `ToastStyle` cannot express zero padding or instant animations — zero is treated as unset |
 
 ---
 
 ## Contributing
 
-This component is intended for upstream submission to the Slint project.
+Contributions are welcome. Please open an issue or discussion before submitting a pull request for anything beyond a bug fix.
 
-Before opening a PR:
-
-1. Open a **GitHub Discussion** in the Slint repository to validate maintainer interest
-2. Wait for at least one maintainer response before writing code
-3. Sign the **Contributor License Agreement (CLA)** when prompted during the PR process
-4. Run `slint-fmt` on all `.slint` files — required before any PR is accepted
-5. Verify `slint-viewer demo/toast-demo.slint` launches with no errors
-
-All contributions are licensed under **MIT No Attribution**.
+All `.slint` files must pass `slint-fmt` before submitting. See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines.
 
 ---
 
