@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
-// Example app window for the C++ host language integration example.
+// Example app window for the Python host language integration example.
 // Import paths are relative to this file's location in the repository.
 //
-// With ToastGlobals, C++ drives toast state via ui->global<ToastGlobals>()
+// With ToastGlobals, Python drives toast state via window.ToastGlobals
 // directly — no wrapper public functions or forwarding callbacks needed on AppWindow.
 
 import { Button, VerticalBox } from "std-widgets.slint";
@@ -11,7 +11,7 @@ import { ToastKind, ToastAnchor } from "../../../../ui/toast_types.slint";
 export { ToastGlobals } from "../../../../ui/toast_globals.slint";
 
 export component AppWindow inherits Window {
-    title: "Toast — C++ Example";
+    title: "Toast — Python Example";
     width: 480px;
     height: 320px;
 
@@ -20,7 +20,7 @@ export component AppWindow inherits Window {
         spacing: 12px;
         padding: 24px;
 
-        // Slint-to-Slint: buttons call toast-host.show() directly — no C++ involved.
+        // Slint-to-Slint: buttons call toast-host.show() directly — no Python involved.
         Button {
             text: "Info";
             clicked => { toast-host.show("This is an info message.", ToastKind.Info); }

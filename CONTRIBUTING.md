@@ -45,9 +45,9 @@ If your contribution adds any of the above, it will not be merged.
 
 ```
 ui/
-    toast-types.slint   — enums and ToastStyle struct only, no visual elements
+    toast_types.slint   — enums and ToastStyle struct only, no visual elements
     toast.slint         — visual atom, no timers, no positioning
-    toast-host.slint    — overlay container, command-driven
+    toast_host.slint    — overlay container, command-driven
 demo/
     toast-demo.slint    — self-contained slint-viewer demo, no backend
 README.md
@@ -93,9 +93,9 @@ If this opens the demo with no errors, your environment is ready.
 ### Running the formatter
 
 ```
-slint-fmt ui/toast-types.slint
+slint-fmt ui/toast_types.slint
 slint-fmt ui/toast.slint
-slint-fmt ui/toast-host.slint
+slint-fmt ui/toast_host.slint
 slint-fmt demo/toast-demo.slint
 ```
 

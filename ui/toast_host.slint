@@ -1,0 +1,76 @@
+// SPDX-License-Identifier: MIT
+// ToastHost — positioning container. State driven by ToastGlobals.
+//
+// Slint-to-Slint callers: use show(text, kind) and hide() as before.
+// Generated-binding hosts (Rust, C++, JS): write to ToastGlobals directly —
+// show()/hide() are not accessible on the parent Window's generated API.
+// See docs/slint-toast-api.md §7 for the full integration note.
+//
+// Must be the last direct child of the root Window. Must NOT be inside any layout.
+
+import { ToastKind, ToastAnchor, ToastStyle } from "toast_types.slint";
+import { ToastGlobals } from "toast_globals.slint";
+import { Toast } from "toast.slint";
+
+export component ToastHost inherits Rectangle {
+    width: 100%;
+    height: 100%;
+    background: transparent;
+
+    // === Per-instance configuration — not in ToastGlobals ===
+    // These are set on the element in the host window and remain stable
+    // across show/hide cycles (e.g. anchor position, close button presence).
+    in property <bool>        enabled: true;
+    in property <bool>        show-close: true;
+    in property <image>       icon;
+    in property <ToastAnchor> anchor: ToastAnchor.BottomRight;
+    in property <ToastStyle>  style;
+
+    // === Convenience functions for Slint-to-Slint callers ===
+    // These write to ToastGlobals and are the same API surface as before.
+    // Generated-binding hosts cannot call these on the parent Window's
+    // generated API — use ToastGlobals directly instead (see §7).
+    public function show(t: string, k: ToastKind) {
+        ToastGlobals.active-text = t;
+        ToastGlobals.active-kind = k;
+        ToastGlobals.active = true;
+    }
+
+    public function hide() {
+        ToastGlobals.active = false;
+    }
+
+    // === Edge margin for all anchor positions ===
+    private property <length> edge-margin: 16px;
+
+    // === Internal Toast instance — state driven by ToastGlobals ===
+    toast := Toast {
+        // Constrain to a reasonable width; height is content-driven.
+        width: min(360px, root.width - 2 * root.edge-margin);
+        height: self.preferred-height;
+
+        text:         ToastGlobals.active-text;
+        kind:         ToastGlobals.active-kind;
+        show:         ToastGlobals.active;
+        enabled:      root.enabled;
+        show-close:   root.show-close;
+        action-label: ToastGlobals.action-label;
+        icon:         root.icon;
+        style:        root.style;
+
+        closed => { ToastGlobals.toast-closed(); }
+        action => { ToastGlobals.toast-action(); }
+
+        // Anchor x position
+        x: root.anchor == ToastAnchor.BottomLeft || root.anchor == ToastAnchor.TopLeft
+            ? root.edge-margin
+            : root.anchor == ToastAnchor.BottomCenter || root.anchor == ToastAnchor.TopCenter
+                ? (root.width - self.width) / 2
+                : root.width - self.width - root.edge-margin;
+
+        // Anchor y position
+        y: root.anchor == ToastAnchor.TopLeft || root.anchor == ToastAnchor.TopCenter || root.anchor == ToastAnchor.TopRight
+            ? root.edge-margin
+            : root.height - self.height - root.edge-margin;
+    }
+}

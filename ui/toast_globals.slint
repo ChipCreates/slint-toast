@@ -1,0 +1,25 @@
+// SPDX-License-Identifier: MIT
+// ToastGlobals — single source of truth for toast state.
+//
+// Introduced to support generated-binding hosts (Rust, C++, JavaScript) where
+// ToastHost's public function show()/hide() API is not accessible on the parent
+// Window's generated bindings. See docs/slint-toast-api.md §7 for full context.
+//
+// Slint-to-Slint callers: continue to use ToastHost.show()/hide() — those
+// convenience functions now write to this global internally.
+// Generated-binding hosts: write to this global directly via ui.global::<ToastGlobals>().
+
+import { ToastKind } from "toast_types.slint";
+
+export global ToastGlobals {
+    // Driven by the host application to show/hide a toast.
+    in-out property <bool>      active: false;
+    in-out property <string>    active-text: "";
+    in-out property <ToastKind> active-kind: ToastKind.Info;
+    // Non-empty string enables the action button.
+    in-out property <string>    action-label: "";
+
+    // Fired toward the host when the user closes or activates the toast.
+    callback toast-closed();
+    callback toast-action();
+}

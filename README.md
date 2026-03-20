@@ -28,8 +28,8 @@ Compatible with all Slint host languages: Rust, C++, JavaScript, and Python.
 Copy the `ui/` directory into your project, then import from your `.slint` file:
 
 ```slint
-import { ToastHost } from "ui/toast-host.slint";
-import { ToastKind, ToastAnchor } from "ui/toast-types.slint";
+import { ToastHost } from "ui/toast_host.slint";
+import { ToastKind, ToastAnchor } from "ui/toast_types.slint";
 ```
 
 ### Minimum working example

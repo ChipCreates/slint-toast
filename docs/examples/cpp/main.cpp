@@ -1,9 +1,15 @@
 // Slint toast component — C++ integration example.
 //
 // Demonstrates:
-//   - Calling show() / hide() from C++
+//   - Driving toast state via ToastGlobals (the correct pattern for C++ hosts)
 //   - Auto-dismiss via slint::Timer::single_shot
-//   - Reacting to toast-closed and toast-action callbacks
+//   - Reacting to toast-closed and toast-action via ToastGlobals callbacks
+//
+// Why ToastGlobals instead of invoke_show_toast / invoke_hide_toast?
+// Slint's code generator only exposes the root Window's own public functions on
+// the generated struct. Named child sub-element functions (toast-host.show / hide)
+// are not accessible from C++ via the generated AppWindow API. ToastGlobals is
+// the canonical bridge — see docs/slint-toast-api.md §7.
 //
 // Build:
 //   cmake -B build && cmake --build build
@@ -16,26 +22,26 @@
 int main()
 {
     auto ui = AppWindow::create();
+    auto globals = ui->global<ToastGlobals>();
+
+    // Wire callbacks once at startup via ToastGlobals.
+    // In a real app: cancel any pending dismiss timer inside on_toast_closed.
+    globals.on_toast_closed([&]() {
+        std::printf("Toast closed by user.\n");
+        globals.set_active(false);
+    });
+
+    globals.on_toast_action([&]() {
+        std::printf("Toast action triggered.\n");
+    });
 
     // Show a welcome toast on startup that auto-dismisses after 4 seconds.
-    ui->invoke_show_toast(
-        "Welcome! This toast will auto-dismiss in 4 seconds.",
-        ToastKind::Info
-    );
+    globals.set_active_text("Welcome! This toast will auto-dismiss in 4 seconds.");
+    globals.set_active_kind(ToastKind::Info);
+    globals.set_active(true);
 
-    slint::Timer::single_shot(std::chrono::milliseconds(4000), [ui]() {
-        ui->invoke_hide_toast();
-    });
-
-    // React to the user manually closing the toast.
-    // In a real app: cancel any pending dismiss timer here.
-    ui->on_toast_closed([&]() {
-        std::printf("Toast closed by user.\n");
-    });
-
-    // React to the action button.
-    ui->on_toast_action([&]() {
-        std::printf("Toast action triggered.\n");
+    slint::Timer::single_shot(std::chrono::milliseconds(4000), [&globals]() {
+        globals.set_active(false);
     });
 
     ui->run();

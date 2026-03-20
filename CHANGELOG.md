@@ -47,7 +47,7 @@ Post peer review. API stabilized for upstream submission.
 Original three-file architecture from maintainer-approved design session.
 
 ### Established
-- `toast-types.slint` — shared enums and style struct
+- `toast_types.slint` — shared enums and style struct
 - `toast.slint` — visual atom, no timers, no positioning
-- `toast-host.slint` — overlay container with anchor positioning
+- `toast_host.slint` — overlay container with anchor positioning
 - `demo/toast-demo.slint` — self-contained `slint-viewer` demo

@@ -1,74 +1,49 @@
 // SPDX-License-Identifier: MIT
 // Example app window for the JavaScript host language integration example.
 // Import paths are relative to this file's location in the repository.
+//
+// With ToastGlobals, JavaScript drives toast state via window.ToastGlobals
+// directly — no wrapper public functions or forwarding callbacks needed on AppWindow.
 
 import { Button, VerticalBox } from "std-widgets.slint";
-import { ToastHost } from "../../../../ui/toast-host.slint";
-import { ToastKind, ToastAnchor } from "../../../../ui/toast-types.slint";
+import { ToastHost } from "../../../../ui/toast_host.slint";
+import { ToastKind, ToastAnchor } from "../../../../ui/toast_types.slint";
+export { ToastGlobals } from "../../../../ui/toast_globals.slint";
 
 export component AppWindow inherits Window {
     title: "Toast — JavaScript Example";
     width: 480px;
     height: 320px;
 
-    // Expose toast control to the JavaScript host via public functions.
-    // JavaScript calls: window.show_toast(...) and window.hide_toast()
-    // (Slint converts kebab-case to snake_case for the JS binding.)
-    public function show-toast(text: string, kind: ToastKind) {
-        toast-host.show(text, kind);
-    }
-
-    public function hide-toast() {
-        toast-host.hide();
-    }
-
-    // Callbacks fired by the toast — assign handlers in JavaScript:
-    //   window.toast_closed = () => { ... }
-    callback toast-closed();
-    callback toast-action();
-
     VerticalBox {
         alignment: center;
         spacing: 12px;
         padding: 24px;
 
+        // Slint-to-Slint: buttons call toast-host.show() directly — no JS involved.
         Button {
             text: "Info";
-            clicked => {
-                toast-host.show("This is an info message.", ToastKind.Info);
-            }
+            clicked => { toast-host.show("This is an info message.", ToastKind.Info); }
         }
 
         Button {
             text: "Success";
-            clicked => {
-                toast-host.show("Operation completed successfully.", ToastKind.Success);
-            }
+            clicked => { toast-host.show("Operation completed successfully.", ToastKind.Success); }
         }
 
         Button {
             text: "Warning";
-            clicked => {
-                toast-host.show("Disk space is running low.", ToastKind.Warning);
-            }
+            clicked => { toast-host.show("Disk space is running low.", ToastKind.Warning); }
         }
 
         Button {
             text: "Error";
-            clicked => {
-                toast-host.show("Connection failed.", ToastKind.Error);
-            }
+            clicked => { toast-host.show("Connection failed.", ToastKind.Error); }
         }
     }
 
     // ToastHost MUST be the last direct child of the Window.
     toast-host := ToastHost {
         anchor: ToastAnchor.BottomRight;
-        toast-closed => {
-            root.toast-closed();
-        }
-        toast-action => {
-            root.toast-action();
-        }
     }
 }

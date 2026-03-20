@@ -40,9 +40,10 @@ When the PR is opened:
 ```
 slint-toast/
 ├── ui/
-│   ├── toast-types.slint       # Enums and style struct — no visual elements
+│   ├── toast_types.slint       # Enums and style struct — no visual elements
+│   ├── toast_globals.slint     # ToastGlobals singleton — state bridge for generated-binding hosts
 │   ├── toast.slint             # Toast — the visual atom
-│   └── toast-host.slint        # ToastHost — positioning container
+│   └── toast_host.slint        # ToastHost — positioning container
 ├── demo/
 │   └── toast-demo.slint        # Self-contained live-preview demo
 └── README.md
@@ -56,7 +57,7 @@ for reviewer verification and live preview tooling.
 
 ## File Responsibilities
 
-### `toast-types.slint`
+### `toast_types.slint`
 
 Declares all shared types with no visual elements whatsoever:
 
@@ -66,7 +67,7 @@ Declares all shared types with no visual elements whatsoever:
   padding, animation durations)
 
 Everything in this file is a pure data declaration. It is imported by both
-`toast.slint` and `toast-host.slint`. Host applications may also import it
+`toast.slint` and `toast_host.slint`. Host applications may also import it
 directly to construct `ToastStyle` values.
 
 ---
@@ -76,7 +77,7 @@ directly to construct `ToastStyle` values.
 The visual atom. Renders a single toast notification. Has no knowledge of
 positioning, stacking, timers, or the host application.
 
-**Imports:** `toast-types.slint`, `std-widgets.slint` (for `Palette`)
+**Imports:** `toast_types.slint`, `std-widgets.slint` (for `Palette`)
 
 **Properties (all `in`):**
 
@@ -113,7 +114,7 @@ is used anywhere in this file.
 
 ---
 
-### `toast-host.slint`
+### `toast_host.slint`
 
 The positioning container. Anchors the toast overlay within the window and
 owns the single `Toast` instance. Exposes a command-driven interface to the
@@ -125,42 +126,50 @@ is written only by `show()` and `hide()`. This eliminates the dual-source-of-
 truth ambiguity that would result from a host being able to set both a public
 `visible` property and call `show()`/`hide()` simultaneously.
 
-**Imports:** `toast-types.slint`, `toast.slint`
+> **Generated-binding hosts (Rust, C++, JavaScript):** Slint's code generator
+> does not expose named child sub-element functions on the parent Window's
+> generated API. `toast-host.show()` and `toast-host.hide()` are inaccessible
+> from Rust/C++/JS via the generated `MainWindow` struct. The `ToastGlobals`
+> pattern documented in the API spec (§7) is the correct integration path for
+> these hosts. Slint-to-Slint callers are unaffected.
 
-**Properties (all `in`):**
+**Imports:** `toast_types.slint`, `toast_globals.slint`, `toast.slint`
+
+**Per-instance properties (all `in`) — stable across show/hide cycles:**
 
 | Property | Type | Default | Notes |
 |---|---|---|---|
-| `text` | `string` | `""` | Forwarded to internal `Toast.text` |
-| `kind` | `ToastKind` | `Info` | Forwarded to internal `Toast.kind` |
 | `enabled` | `bool` | `true` | Forwarded to internal `Toast.enabled` |
 | `show-close` | `bool` | `true` | Forwarded to internal `Toast.show-close` |
-| `action-label` | `string` | `""` | Forwarded to internal `Toast.action-label` |
 | `icon` | `image` | — | Forwarded to internal `Toast.icon` |
 | `anchor` | `ToastAnchor` | `BottomRight` | Controls overlay position |
 | `style` | `ToastStyle` | — | Forwarded to internal `Toast.style` |
 
-**Internal state (not public):**
+**Per-toast state — driven via `ToastGlobals`:**
 
-| Property | Type | Purpose |
+| Global property | Type | Purpose |
 |---|---|---|
-| `active-visible` | `bool` | Sole source of truth for toast visibility |
-| `active-text` | `string` | Written by `show()`, forwarded to `Toast.text` |
-| `active-kind` | `ToastKind` | Written by `show()`, forwarded to `Toast.kind` |
+| `ToastGlobals.active` | `bool` | Sole source of truth for toast visibility |
+| `ToastGlobals.active-text` | `string` | The notification message |
+| `ToastGlobals.active-kind` | `ToastKind` | Controls color resolution |
+| `ToastGlobals.action-label` | `string` | Non-empty = action button rendered |
 
-**Functions (command input — called by host app):**
+**Functions (Slint-to-Slint convenience — write to `ToastGlobals` internally):**
 
 | Function | Signature | Behaviour |
 |---|---|---|
-| `show` | `(text: string, kind: ToastKind)` | Writes `active-text`, `active-kind`, sets `active-visible = true` |
-| `hide` | `()` | Sets `active-visible = false` |
+| `show` | `(text: string, kind: ToastKind)` | Writes `ToastGlobals.active-text/kind`, sets `ToastGlobals.active = true` |
+| `hide` | `()` | Sets `ToastGlobals.active = false` |
 
-**Callbacks (outbound only — fired by component):**
+> Generated-binding hosts (Rust, C++, JS) cannot call these on the parent Window's
+> generated API. They write to `ToastGlobals` directly. See API doc §7.
 
-| Callback | Fired when |
+**Callbacks — routed through `ToastGlobals`:**
+
+| Global callback | Fired when |
 |---|---|
-| `toast-closed()` | Internal `Toast.closed` fires |
-| `toast-action()` | Internal `Toast.action` fires |
+| `ToastGlobals.toast-closed()` | Internal `Toast.closed` fires |
+| `ToastGlobals.toast-action()` | Internal `Toast.action` fires |
 
 ---
 
@@ -348,9 +357,10 @@ This constraint must be documented prominently in the README.
 | Toast queuing / sequencing | **Host application** |
 | Priority / interruption logic | **Host application** |
 | Multiple simultaneous toasts | **Host application** |
-| Calling `show()` / `hide()` | **Host application** |
-| Reacting to `toast-closed()` | **Host application** |
-| Reacting to `toast-action()` | **Host application** |
+| Calling `show()` / `hide()` (Slint-to-Slint) | **Host application** |
+| Writing `ToastGlobals` directly (generated-binding hosts) | **Host application** |
+| Reacting to `ToastGlobals.toast-closed()` | **Host application** |
+| Reacting to `ToastGlobals.toast-action()` | **Host application** |
 | Screen reader announcement (if required) | **Host application** |
 
 ---
@@ -419,7 +429,15 @@ The component README must document:
 
 ## Revision History
 
-### v3 (this revision) — post peer review
+### v4 (this revision) — ToastGlobals integration
+
+- **Added** `ui/toast_globals.slint` — `ToastGlobals` singleton for generated-binding host integration.
+- **Moved** `ToastHost` internal state (`active-visible`, `active-text`, `active-kind`) into `ToastGlobals`.
+- **Preserved** `show()`/`hide()` as Slint-to-Slint convenience functions; they now write to `ToastGlobals`.
+- **Updated** file structure, `toast_host.slint` section, and responsibility boundary table.
+- **Added** integration note callout in `toast_host.slint` section.
+
+### v3 — post peer review
 
 - **Removed** `ToastHost.visible` public property. `ToastHost` is now
   command-driven only. Single source of truth: `active-visible`.
